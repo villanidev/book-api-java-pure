@@ -1,0 +1,15 @@
+FROM ghcr.io/graalvm/native-image-community:21.0.1-ol9
+
+WORKDIR /build
+COPY . .
+
+# Install Maven and build
+RUN microdnf install maven && \
+    mvn -Pnative clean package
+
+# Move the built native image
+RUN mv target/book-api /app/book-api
+
+WORKDIR /app
+ENTRYPOINT ["/app/book-api"]
+EXPOSE 8080
