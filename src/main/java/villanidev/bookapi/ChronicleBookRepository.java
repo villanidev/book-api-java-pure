@@ -21,7 +21,8 @@ public class ChronicleBookRepository {
         this.bookMap = ChronicleMap
                 .of(String.class, Book.class)
                 .name("books-map")
-                .entries(10_000) // Expected max entries
+                .entries(50_000) // Expected max entries
+                .actualSegments(Runtime.getRuntime().availableProcessors()) // Match CPU cores
                 .averageKeySize(36) // UUID size
                 .averageValueSize(200) // Average book size
                 .putReturnsNull(true) // Slightly faster puts
@@ -41,6 +42,7 @@ public class ChronicleBookRepository {
     }
 
     public List<Book> findAll() {
+        System.out.println("find all");
         return new ArrayList<>(bookMap.values());
     }
 

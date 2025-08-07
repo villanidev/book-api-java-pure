@@ -10,13 +10,14 @@ import java.util.concurrent.Executors;
 public class JServer {
     private final HttpServer server;
 
-    private JServer(int port, JRouter router) throws IOException {
-        this.server = HttpServer.create(new InetSocketAddress(port), 0);
+    private JServer(int port, JOptimizedRouter router) throws IOException {
+        this.server = HttpServer.create(new InetSocketAddress(port), 100);
         this.server.setExecutor(getVirtualThreadPerTaskExecutor());
         this.server.createContext("/", exchange -> {
             try {
                 JHttpRequest request = new JHttpRequest(exchange);
                 JHttpResponse response = new JHttpResponse(exchange);
+                System.out.println("-----" + Thread.currentThread().getName());
                 router.handle(request, response);
             } catch (Exception e) {
                 exchange.sendResponseHeaders(500, 0);
@@ -26,7 +27,13 @@ public class JServer {
     }
 
     private ExecutorService getVirtualThreadPerTaskExecutor() {
-        return Executors.newVirtualThreadPerTaskExecutor();
+        //return Executors.newVirtualThreadPerTaskExecutor();
+
+        return Executors.newThreadPerTaskExecutor(
+                Thread.ofVirtual()
+                        .name("vthread-", 0)
+                        .factory()
+        );
     }
 
     public void start() {
@@ -36,8 +43,8 @@ public class JServer {
 
     public static class Builder {
         private int port;
-        private final JRouter router = new JRouter();
-        //private final JOptimizedRouter router = new JOptimizedRouter();
+        //private final JRouter router = new JRouter();
+        private final JOptimizedRouter router = new JOptimizedRouter();
         public Builder port(int port) {
             this.port = port;
             return this;

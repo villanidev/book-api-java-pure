@@ -9,10 +9,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BookController {
-   //private final BookRepository repository;
-    private final ChronicleBookRepository repository;
+   private final BookRepository repository;
+    //private final ChronicleBookRepository repository;
 
-    public BookController(ChronicleBookRepository repository) {
+    public BookController(BookRepository repository) {
         this.repository = repository;
     }
 

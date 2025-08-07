@@ -23,27 +23,27 @@ public class JsonUtils {
     }*/
 
     // Singleton fallback
-    private static final ObjectMapper mapper = new ObjectMapper()
+    /*private static final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);*/
 
     // ThreadLocal for high-throughput scenarios
-    /*private static final ThreadLocal<ObjectMapper> mapper = ThreadLocal.withInitial(
+    private static final ThreadLocal<ObjectMapper> mapper = ThreadLocal.withInitial(
             () -> new ObjectMapper()
                     .registerModule(new JavaTimeModule())
                     .setSerializationInclusion(JsonInclude.Include.NON_NULL)
                     .disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
                     .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                     .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-    );*/
+    );
 
     public static String toJson(Object object) {
         try {
-            //return mapper.get().writeValueAsString(object);
-            return mapper.writeValueAsString(object);
+            return mapper.get().writeValueAsString(object);
+            //return mapper.writeValueAsString(object);
         } catch (Exception e) {
             throw new RuntimeException("Failed to serialize object to JSON", e);
         }
@@ -51,8 +51,8 @@ public class JsonUtils {
 
     public static void toJsonStreaming(OutputStream outputStream, Object object) {
         try {
-            //mapper.get().writeValue(outputStream, object);
-            mapper.writeValue(outputStream, object);
+            mapper.get().writeValue(outputStream, object);
+            //mapper.writeValue(outputStream, object);
         } catch (Exception e) {
             throw new RuntimeException("Failed to serialize object to JSON", e);
         }
@@ -60,8 +60,8 @@ public class JsonUtils {
 
     public static <T> T fromJson(String json, Class<T> type) {
         try {
-            //return mapper.get().readValue(json, type);
-            return mapper.readValue(json, type);
+            return mapper.get().readValue(json, type);
+            //return mapper.readValue(json, type);
         } catch (Exception e) {
             throw new RuntimeException("Failed to deserialize JSON", e);
         }
