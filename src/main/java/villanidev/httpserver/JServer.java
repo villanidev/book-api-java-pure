@@ -17,7 +17,7 @@ public class JServer {
             try {
                 JHttpRequest request = new JHttpRequest(exchange);
                 JHttpResponse response = new JHttpResponse(exchange);
-                System.out.println("-----" + Thread.currentThread().getName());
+                System.out.println("processing Http Request: " + Thread.currentThread().getName());
                 router.handle(request, response);
             } catch (Exception e) {
                 exchange.sendResponseHeaders(500, 0);
@@ -31,7 +31,7 @@ public class JServer {
 
         return Executors.newThreadPerTaskExecutor(
                 Thread.ofVirtual()
-                        .name("vthread-", 0)
+                        .name("serverVthread-", 0)
                         .factory()
         );
     }

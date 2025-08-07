@@ -1,4 +1,6 @@
-package villanidev.bookapi;
+package villanidev.bookapi.mvc;
+
+import villanidev.bookapi.mvc.Book;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

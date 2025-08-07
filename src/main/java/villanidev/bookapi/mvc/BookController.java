@@ -1,4 +1,4 @@
-package villanidev.bookapi;
+package villanidev.bookapi.mvc;
 
 import villanidev.httpserver.JHttpRequest;
 import villanidev.httpserver.JHttpResponse;
@@ -7,22 +7,22 @@ import villanidev.httpserver.utils.JsonUtils;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class BookController {
-   private final BookRepository repository;
-    //private final ChronicleBookRepository repository;
+   private final BookService service;
 
-    public BookController(BookRepository repository) {
-        this.repository = repository;
+    public BookController(BookService service) {
+        this.service = service;
     }
 
     public void listBooks(JHttpRequest request, JHttpResponse response) {
-        response.json(repository.findAll());
+        response.json(service.findAll());
     }
 
     public void getBook(JHttpRequest request, JHttpResponse response) {
-        String id = request.getPath().split("/")[2];
-        repository.findById(id).ifPresentOrElse(
+        String id = request.getPathParam("id");
+        service.findById(id).ifPresentOrElse(
                 response::json,
                 () -> response.status(404).send("Book not found")
         );
@@ -31,14 +31,19 @@ public class BookController {
     public void createBook(JHttpRequest request, JHttpResponse response) {
         try {
             Book book = JsonUtils.fromJson(request.getBody(), Book.class);
-            Book savedBook = repository.save(book);
-            response.status(201).json(savedBook);
+            CompletableFuture<Void> future = service.save(book);
+            future.thenAccept(v -> {
+                response.status(201).json(book);
+            }).exceptionally(ex -> {
+                response.status(500).send("Failed to save book");
+                return null;
+            });
         } catch (Exception e) {
             response.status(400).send("Invalid book data");
         }
     }
 
-    public void updateBook(JHttpRequest request, JHttpResponse response) {
+    /*public void updateBook(JHttpRequest request, JHttpResponse response) {
         String id = request.getPath().split("/")[2];
         if (repository.findById(id).isEmpty()) {
             response.status(404).send("Book not found");
@@ -52,16 +57,16 @@ public class BookController {
         } catch (Exception e) {
             response.status(400).send("Invalid book data");
         }
-    }
+    }*/
 
-    public void deleteBook(JHttpRequest request, JHttpResponse response) {
+    /*public void deleteBook(JHttpRequest request, JHttpResponse response) {
         String id = request.getPath().split("/")[2];
         if (repository.delete(id)) {
             response.status(204).send("");
         } else {
             response.status(404).send("Book not found");
         }
-    }
+    }*/
 
     public void healthCheck(JHttpRequest request, JHttpResponse response) {
         Map<String, Object> health = new HashMap<>();

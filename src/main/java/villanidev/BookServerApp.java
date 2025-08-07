@@ -1,8 +1,11 @@
 package villanidev;
 
-import villanidev.bookapi.BookController;
-import villanidev.bookapi.BookRepository;
-import villanidev.bookapi.ChronicleBookRepository;
+import com.zaxxer.hikari.HikariDataSource;
+import villanidev.bookapi.mvc.BookController;
+import villanidev.bookapi.mvc.BookService;
+import villanidev.bookapi.persistenceconfig.DatabaseConfig;
+import villanidev.bookapi.persistenceconfig.SchemaInitializer;
+import villanidev.bookapi.mvc.BookRepositoryWithCache;
 import villanidev.httpserver.JServer;
 
 import java.io.IOException;
@@ -10,20 +13,27 @@ import java.io.IOException;
 public class BookServerApp {
 
     public static void main(String[] args) throws IOException {
-        //ChronicleBookRepository repository = new ChronicleBookRepository();
-        // Add shutdown hook to properly close the map
-        //Runtime.getRuntime().addShutdownHook(new Thread(repository::close));
 
-        BookRepository repository = new BookRepository();
-        BookController bookController = new BookController(repository);
+        // Initialize database
+        HikariDataSource dataSource = (HikariDataSource) DatabaseConfig.createDataSource();
+        SchemaInitializer.initializeSchema(dataSource);
 
+        // DI
+        BookRepositoryWithCache repository = new BookRepositoryWithCache(dataSource);
+        BookService service = new BookService(repository);
+        BookController bookController = new BookController(service);
+
+        // Add shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread(dataSource::close));
+
+        // Create and start server
         JServer server = new JServer.Builder()
                 .port(8080)
                 .addRoute("GET", "/books", bookController::listBooks)
                 .addRoute("GET", "/books/:id", bookController::getBook)
                 .addRoute("POST", "/books", bookController::createBook)
-                .addRoute("PUT", "/books/:id", bookController::updateBook)
-                .addRoute("DELETE", "/books/:id", bookController::deleteBook)
+                //.addRoute("PUT", "/books/:id", bookController::updateBook)
+                //.addRoute("DELETE", "/books/:id", bookController::deleteBook)
                 .addRoute("GET", "/health", bookController::healthCheck)
                 .build();
 
