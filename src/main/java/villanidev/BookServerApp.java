@@ -35,6 +35,7 @@ public class BookServerApp {
                 //.addRoute("PUT", "/books/:id", bookController::updateBook)
                 //.addRoute("DELETE", "/books/:id", bookController::deleteBook)
                 .addRoute("GET", "/health", bookController::healthCheck)
+                .addRoute("GET", "/ping", bookController::ping)
                 .build();
 
         server.start();

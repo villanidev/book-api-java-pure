@@ -1,6 +1,5 @@
 package villanidev.httpserver;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -10,7 +9,6 @@ public class JRouter {
     private final Map<RouteKey, RouteHandler> routes = new ConcurrentHashMap<>();
 
     public void addRoute(String method, String path, RouteHandler handler) {
-        //routes.put(new RouteKey(method, path), handler);
         routes.put(new RouteKey(method, normalizePath(path)), handler);
     }
 
@@ -71,15 +69,4 @@ public class JRouter {
     private String normalizePath(String path) {
         return path.replaceAll("/+", "/").replaceAll("/$", "");
     }
-
-    /*public void handle(JHttpRequest request, JHttpResponse response) {
-        RouteKey key = new RouteKey(request.getMethod(), request.getPath());
-        RouteHandler handler = routes.get(key);
-
-        if (handler != null) {
-            handler.handle(request, response);
-        } else {
-            response.status(404).send("Not Found");
-        }
-    }*/
 }

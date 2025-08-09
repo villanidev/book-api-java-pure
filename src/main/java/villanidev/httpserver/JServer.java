@@ -27,11 +27,10 @@ public class JServer {
     }
 
     private ExecutorService getVirtualThreadPerTaskExecutor() {
-        //return Executors.newVirtualThreadPerTaskExecutor();
-
-        return Executors.newThreadPerTaskExecutor(
+        return Executors.newFixedThreadPool(
+                20,
                 Thread.ofVirtual()
-                        .name("serverVthread-", 0)
+                        .name("mainVthread-", 0)
                         .factory()
         );
     }

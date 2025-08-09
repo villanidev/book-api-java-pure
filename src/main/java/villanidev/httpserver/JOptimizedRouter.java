@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 public class JOptimizedRouter {
 
     // Define HTTP methods we support
-    private enum HttpMethod {
+    public enum HttpMethod {
         GET, POST, PUT, DELETE, HEAD, OPTIONS
     }
     private static class Route {

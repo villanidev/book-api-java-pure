@@ -19,7 +19,7 @@ public class BatchWriteWorker implements Runnable {
     private final DataSource dataSource;
     private final LoadingCache<String, VersionedBook> cache;
     private final int batchSize = 200; //chunk size
-    private final Duration batchSleep = Duration.ofMillis(100);
+    private final Duration batchSleep = Duration.ofMillis(50);
 
     public BatchWriteWorker(BlockingQueue<BookEvent> writeQueue,
                             DataSource dataSource,
@@ -49,14 +49,14 @@ public class BatchWriteWorker implements Runnable {
 
                 processBatch(batchRecords);
                 batchRecords.clear();
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 Thread.currentThread().interrupt();
                 break;
             }
         }
     }
 
-    private void processBatch(List<BookEvent> batch) {
+    private void processBatch(List<BookEvent> batch) throws Exception {
         System.out.println("processBatch: " + Thread.currentThread().getName());
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
@@ -105,13 +105,9 @@ public class BatchWriteWorker implements Runnable {
                         event.timestamp()
                 );
                 cache.put(event.bookId(), versioned);
-                event.completionFuture().complete(null);
             });
 
             conn.commit();
-        } catch (Exception e) {
-            batch.forEach(event ->
-                    event.completionFuture().completeExceptionally(e));
         }
     }
 }

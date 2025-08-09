@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 
 public class DatabaseConfig {
     private static final Path DB_PATH = Paths.get("./data/bookstore");
-    private static final int MAX_POOL_SIZE = 10;
+    private static final int MAX_POOL_SIZE = 20;
 
     public static DataSource createDataSource() {
         // Ensure database directory exists

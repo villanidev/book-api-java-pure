@@ -31,13 +31,8 @@ public class BookController {
     public void createBook(JHttpRequest request, JHttpResponse response) {
         try {
             Book book = JsonUtils.fromJson(request.getBody(), Book.class);
-            CompletableFuture<Void> future = service.save(book);
-            future.thenAccept(v -> {
-                response.status(201).json(book);
-            }).exceptionally(ex -> {
-                response.status(500).send("Failed to save book");
-                return null;
-            });
+            service.save(book);
+            response.status(201).json(book);
         } catch (Exception e) {
             response.status(400).send("Invalid book data");
         }
@@ -72,6 +67,10 @@ public class BookController {
         Map<String, Object> health = new HashMap<>();
         health.put("status", "UP");
         health.put("timestamp", Instant.now().toString());
-        response.json(health);
+        response.status(200).json(health);
+    }
+
+    public void ping(JHttpRequest request, JHttpResponse response) {
+        response.status(200).send(null);
     }
 }

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.*;
+import java.util.stream.IntStream;
 
 public class BookService {
     private final BlockingQueue<BookEvent> writeQueue = new LinkedBlockingQueue<>(10_000);
@@ -23,7 +24,7 @@ public class BookService {
         this.workerExecutor.submit(new BatchWriteWorker(writeQueue, repository.getDataSource(), repository.getCache()));
     }
 
-    public CompletableFuture<Void> save(Book book) {
+    /*public CompletableFuture<Void> save(Book book) {
         String id = book.id() == null ? UUID.randomUUID().toString() : book.id();
         Book newBook = new Book(id, book.title(), book.author(), book.year());
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -42,6 +43,25 @@ public class BookService {
             future.completeExceptionally(new IllegalStateException("Write queue full"));
         }
         return future;
+    }*/
+
+    public void save(Book book) {
+        String id = book.id() == null ? UUID.randomUUID().toString() : book.id();
+        Book newBook = new Book(id, book.title(), book.author(), book.year());
+        boolean newSaveBookEvent = writeQueue.offer(
+                new BookEvent(
+                        UUID.randomUUID(),
+                        newBook.id(),
+                        newBook,
+                        Instant.now(),
+                        System.currentTimeMillis(), // Version as timestamp
+                        null
+                )
+        );
+
+        if (!newSaveBookEvent) {
+            throw new IllegalStateException("Write queue full");
+        }
     }
 
     public Optional<Book> findById(String id) {
