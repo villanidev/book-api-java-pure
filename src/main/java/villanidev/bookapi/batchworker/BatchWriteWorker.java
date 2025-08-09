@@ -1,8 +1,11 @@
 package villanidev.bookapi.batchworker;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import villanidev.bookapi.events.BookEvent;
 import villanidev.bookapi.events.VersionedBook;
+import villanidev.bookapi.mvc.Book;
+import villanidev.bookapi.mvc.ChronicleBookRepository;
 import villanidev.httpserver.utils.JsonUtils;
 
 import javax.sql.DataSource;
@@ -20,6 +23,7 @@ public class BatchWriteWorker implements Runnable {
     private final LoadingCache<String, VersionedBook> cache;
     private final int batchSize = 200; //chunk size
     private final Duration batchSleep = Duration.ofMillis(50);
+    private final ChronicleBookRepository repository;
 
     public BatchWriteWorker(BlockingQueue<BookEvent> writeQueue,
                             DataSource dataSource,
@@ -27,6 +31,15 @@ public class BatchWriteWorker implements Runnable {
         this.writeQueue = writeQueue;
         this.dataSource = dataSource;
         this.cache = cache;
+        this.repository = null;
+    }
+
+    public BatchWriteWorker(BlockingQueue<BookEvent> writeQueue,
+                            ChronicleBookRepository repository) {
+        this.writeQueue = writeQueue;
+        this.dataSource = null;
+        this.cache = null;
+        this.repository = repository;
     }
 
     public void run() {
@@ -47,7 +60,8 @@ public class BatchWriteWorker implements Runnable {
                     writeQueue.drainTo(batchRecords, batchSize - batchRecords.size());
                 }
 
-                processBatch(batchRecords);
+                //processBatch(batchRecords);
+                processBatch2(batchRecords);
                 batchRecords.clear();
             } catch (Exception e) {
                 Thread.currentThread().interrupt();
@@ -109,5 +123,10 @@ public class BatchWriteWorker implements Runnable {
 
             conn.commit();
         }
+    }
+
+    private void processBatch2(List<BookEvent> batchRecords) {
+        System.out.println("processBatch2: " + Thread.currentThread().getName());
+        batchRecords.stream().parallel().forEach(evt -> repository.save(evt.book()));
     }
 }

@@ -1,19 +1,27 @@
 package villanidev.bookapi.mvc;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import net.openhft.chronicle.map.ChronicleMap;
-import villanidev.bookapi.mvc.Book;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ChronicleBookRepository {
     private final ChronicleMap<String, Book> bookMap;
     private final Path storagePath;
+    private final Cache<String, Book> cache;
+
+    List<Lock> locks;
 
     public ChronicleBookRepository() throws IOException {
         this.storagePath = getStoragePath();
@@ -29,26 +37,54 @@ public class ChronicleBookRepository {
                 .putReturnsNull(true) // Slightly faster puts
                 .removeReturnsNull(true) // Slightly faster removes
                 .createPersistedTo(storagePath.toFile());
+
+        this.cache = Caffeine.newBuilder()
+                .maximumSize(50_000)
+                .expireAfterWrite(5, TimeUnit.MINUTES)
+                .build(bookMap::get);
+
+        this.locks = Stream.generate(ReentrantLock::new)
+                .limit(16)  // Number of stripes
+                .collect(Collectors.toList());
+
     }
 
-    public Book save(Book book) {
+    public void save(Book book) {
+        /*synchronized (this) {  // Global lock for simplicity
+            String id = book.id() == null ? UUID.randomUUID().toString() : book.id();
+            Book newBook = new Book(id, book.title(), book.author(), book.year());
+            bookMap.put(id, newBook);
+            cache.put(id, newBook);
+        }*/
+
         String id = book.id() == null ? UUID.randomUUID().toString() : book.id();
         Book newBook = new Book(id, book.title(), book.author(), book.year());
-        bookMap.put(id, newBook);
-        return newBook;
+        Lock lock = getLock(id);
+        lock.lock();
+        try {
+            bookMap.put(id, newBook);
+            cache.put(id, newBook);
+        } finally {
+            lock.unlock();
+        }
     }
 
     public Optional<Book> findById(String id) {
-        return Optional.ofNullable(bookMap.get(id));
+        System.out.println("find by : " + id);
+        return Optional.ofNullable(cache.getIfPresent(id));
     }
 
     public List<Book> findAll() {
         System.out.println("find all");
-        return new ArrayList<>(bookMap.values());
+        return cache.asMap().values().stream().toList();
     }
 
     public boolean delete(String id) {
-        return bookMap.remove(id) != null;
+        boolean removed = bookMap.remove(id) != null;
+        if (removed) {
+            this.cache.invalidate(id);
+        }
+        return removed;
     }
 
     public void close() {
@@ -70,5 +106,13 @@ public class ChronicleBookRepository {
         if (!Files.exists(dir)) {
             Files.createDirectories(dir);
         }
+    }
+
+    public Cache<String, Book> getCache() {
+        return cache;
+    }
+
+    private Lock getLock(String key) {
+        return locks.get(Math.abs(key.hashCode() % locks.size()));
     }
 }

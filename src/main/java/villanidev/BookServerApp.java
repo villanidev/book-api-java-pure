@@ -3,6 +3,7 @@ package villanidev;
 import com.zaxxer.hikari.HikariDataSource;
 import villanidev.bookapi.mvc.BookController;
 import villanidev.bookapi.mvc.BookService;
+import villanidev.bookapi.mvc.ChronicleBookRepository;
 import villanidev.bookapi.persistenceconfig.DatabaseConfig;
 import villanidev.bookapi.persistenceconfig.SchemaInitializer;
 import villanidev.bookapi.mvc.BookRepositoryWithCache;
@@ -20,7 +21,8 @@ public class BookServerApp {
         SchemaInitializer.initializeSchema(dataSource);
 
         // DI
-        BookRepositoryWithCache repository = new BookRepositoryWithCache(dataSource);
+        //BookRepositoryWithCache repository = new BookRepositoryWithCache(dataSource);
+        ChronicleBookRepository repository = new ChronicleBookRepository();
         BookService service = new BookService(repository);
         // Create executor (uses virtual threads by default)
         SimpleAsyncExecutor asyncExecutor = new SimpleAsyncExecutor();

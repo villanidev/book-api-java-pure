@@ -7,8 +7,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.*;
-import java.util.stream.IntStream;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class BookService {
     private final BlockingQueue<BookEvent> writeQueue = new LinkedBlockingQueue<>(10_000);
@@ -17,11 +19,13 @@ public class BookService {
                     .name("workerVthread-", 0)
                     .factory()
     );
-    private final BookRepositoryWithCache repository;
+    //private final BookRepositoryWithCache repository;
+    private final ChronicleBookRepository repository;
 
-    public BookService(BookRepositoryWithCache repository) {
+    public BookService(ChronicleBookRepository repository) {
         this.repository = repository;
-        this.workerExecutor.submit(new BatchWriteWorker(writeQueue, repository.getDataSource(), repository.getCache()));
+        //this.workerExecutor.submit(new BatchWriteWorker(writeQueue, repository.getDataSource(), repository.getCache()));
+        this.workerExecutor.submit(new BatchWriteWorker(writeQueue, repository));
     }
 
     /*public CompletableFuture<Void> save(Book book) {
