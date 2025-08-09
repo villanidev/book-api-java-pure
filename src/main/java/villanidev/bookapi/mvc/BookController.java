@@ -2,6 +2,7 @@ package villanidev.bookapi.mvc;
 
 import villanidev.httpserver.JHttpRequest;
 import villanidev.httpserver.JHttpResponse;
+import villanidev.httpserver.SimpleAsyncExecutor;
 import villanidev.httpserver.utils.JsonUtils;
 
 import java.time.Instant;
@@ -11,9 +12,11 @@ import java.util.concurrent.CompletableFuture;
 
 public class BookController {
    private final BookService service;
+   private final SimpleAsyncExecutor asyncExecutor;
 
-    public BookController(BookService service) {
+    public BookController(BookService service, SimpleAsyncExecutor simpleAsyncExecutor) {
         this.service = service;
+        this.asyncExecutor = simpleAsyncExecutor;
     }
 
     public void listBooks(JHttpRequest request, JHttpResponse response) {
@@ -30,9 +33,15 @@ public class BookController {
 
     public void createBook(JHttpRequest request, JHttpResponse response) {
         try {
-            Book book = JsonUtils.fromJson(request.getBody(), Book.class);
+            /*Book book = JsonUtils.fromJson(request.getBody(), Book.class);
             service.save(book);
-            response.status(201).json(book);
+            response.status(201).json(book);*/
+            String body = request.getBody();
+            asyncExecutor.execute(() -> {
+                Book book = JsonUtils.fromJson(body, Book.class);
+                service.save(book);
+            });
+            response.status(201).send(body, "application/json");
         } catch (Exception e) {
             response.status(400).send("Invalid book data");
         }

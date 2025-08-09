@@ -46,6 +46,7 @@ public class BookService {
     }*/
 
     public void save(Book book) {
+        System.out.println("Saving book: " + Thread.currentThread().getName());
         String id = book.id() == null ? UUID.randomUUID().toString() : book.id();
         Book newBook = new Book(id, book.title(), book.author(), book.year());
         boolean newSaveBookEvent = writeQueue.offer(

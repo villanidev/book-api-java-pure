@@ -90,6 +90,9 @@
                         <buildArg>-H:+ReportExceptionStackTraces</buildArg>
                         <buildArg>-H:+PrintClassInitialization</buildArg>
                     </buildArgs>
+                    <metadataRepository>
+                        <enabled>true</enabled>
+                    </metadataRepository>
                 </configuration>
             </plugin>
             <!-- Standard Maven plugins -->

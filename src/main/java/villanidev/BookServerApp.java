@@ -7,6 +7,7 @@ import villanidev.bookapi.persistenceconfig.DatabaseConfig;
 import villanidev.bookapi.persistenceconfig.SchemaInitializer;
 import villanidev.bookapi.mvc.BookRepositoryWithCache;
 import villanidev.httpserver.JServer;
+import villanidev.httpserver.SimpleAsyncExecutor;
 
 import java.io.IOException;
 
@@ -21,7 +22,9 @@ public class BookServerApp {
         // DI
         BookRepositoryWithCache repository = new BookRepositoryWithCache(dataSource);
         BookService service = new BookService(repository);
-        BookController bookController = new BookController(service);
+        // Create executor (uses virtual threads by default)
+        SimpleAsyncExecutor asyncExecutor = new SimpleAsyncExecutor();
+        BookController bookController = new BookController(service, asyncExecutor);
 
         // Add shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(dataSource::close));

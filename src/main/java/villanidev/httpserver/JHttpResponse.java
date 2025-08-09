@@ -53,6 +53,11 @@ public class JHttpResponse {
         }
     }
 
+    public void send(String body, String contentType) {
+        this.contentType(contentType);
+        this.send(body);
+    }
+
     /*public void json(Object object) {
         this.contentType("application/json");
         this.send(JsonUtils.toJson(object));
