@@ -17,7 +17,7 @@ public class JServer {
             try {
                 JHttpRequest request = new JHttpRequest(exchange);
                 JHttpResponse response = new JHttpResponse(exchange);
-                System.out.println("-----" + Thread.currentThread().getName());
+                System.out.println("processing Http Request: " + Thread.currentThread().getName());
                 router.handle(request, response);
             } catch (Exception e) {
                 exchange.sendResponseHeaders(500, 0);
@@ -27,11 +27,10 @@ public class JServer {
     }
 
     private ExecutorService getVirtualThreadPerTaskExecutor() {
-        //return Executors.newVirtualThreadPerTaskExecutor();
-
-        return Executors.newThreadPerTaskExecutor(
+        return Executors.newFixedThreadPool(
+                20,
                 Thread.ofVirtual()
-                        .name("vthread-", 0)
+                        .name("mainVthread-", 0)
                         .factory()
         );
     }

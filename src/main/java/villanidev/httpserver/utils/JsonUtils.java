@@ -11,18 +11,7 @@ import java.io.OutputStream;
 
 public class JsonUtils {
 
-    /*public static final ObjectMapper mapper;
-
-    static {
-        mapper = new ObjectMapper()
-                //.registerModule(new JavaTimeModule())
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                .configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false)
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-    }*/
-
-    // Singleton fallback
+     // Singleton fallback
     /*private static final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
