@@ -1,21 +1,17 @@
-package villanidev.bookapi.mvc;
+package villanidev.bookapi;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import villanidev.bookapi.events.VersionedBook;
-import villanidev.httpserver.utils.JsonUtils;
 
 import javax.sql.DataSource;
 import java.sql.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 public class BookRepositoryWithCache {
-    private final LoadingCache<String, VersionedBook> cache;
+    private final LoadingCache<String, Book> cache;
     private final DataSource dataSource;
 
     public BookRepositoryWithCache(DataSource dataSource) {
@@ -33,7 +29,7 @@ public class BookRepositoryWithCache {
         try (Connection conn = dataSource.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(
-                     "SELECT id, title, author, pub_year, version, last_updated FROM books")) {
+                     "SELECT id, title, author, pub_year FROM books")) {
             while (rs.next()) {
                 Book book = new Book(
                         rs.getString("id"),
@@ -41,87 +37,85 @@ public class BookRepositoryWithCache {
                         rs.getString("author"),
                         rs.getInt("pub_year")
                 );
-                VersionedBook versioned = new VersionedBook(
-                        book,
-                        rs.getLong("version"),
-                        rs.getTimestamp("last_updated").toInstant()
-                );
-                System.out.println(versioned);
-                cache.put(book.id(), versioned);
+                System.out.println(book);
+                cache.put(book.id(), book);
             }
         } catch (SQLException e) {
             throw new RuntimeException("Cache warm-up failed", e);
         }
     }
 
-    public LoadingCache<String, VersionedBook> getCache() {
+    public LoadingCache<String, Book> getCache() {
         return cache;
     }
 
-    public CompletableFuture<Void> save(Book book) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        long version = System.currentTimeMillis();
-
+    public Book save(Book book) {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
 
             // 1. Save to main table
             try (PreparedStatement stmt = conn.prepareStatement(
-                    "MERGE INTO books KEY(id) VALUES (?, ?, ?, ?, ?, ?)")) {
+                    "MERGE INTO books KEY(id) VALUES (?, ?, ?, ?)")) {
                 stmt.setString(1, book.id());
                 stmt.setString(2, book.title());
                 stmt.setString(3, book.author());
                 stmt.setInt(4, book.year());
-                stmt.setLong(5, version);
-                stmt.setTimestamp(6, Timestamp.from(Instant.now()));
-                stmt.executeUpdate();
-            }
-
-            // 2. Save to audit log
-            try (PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO book_events (event_id, book_id, type, data, version) " +
-                            "VALUES (?, ?, ?, ?, ?)")) {
-                stmt.setString(1, UUID.randomUUID().toString());
-                stmt.setString(2, book.id());
-                stmt.setString(3, "UPDATE");
-                stmt.setString(4, JsonUtils.toJson(book));
-                stmt.setLong(5, version);
                 stmt.executeUpdate();
             }
 
             // 3. Update cache
-            VersionedBook versionedBook = new VersionedBook(book, version, Instant.now());
-            cache.put(book.id(), versionedBook);
-
+            cache.put(book.id(), book);
             conn.commit();
-            future.complete(null);
         } catch (Exception e) {
-            future.completeExceptionally(e);
+            throw new RuntimeException("Error while saving book: ", e);
         }
 
-        return future;
+        return book;
+    }
+
+    public void saveBooks(List<Book> books) {
+        try {
+            try (Connection conn = dataSource.getConnection()) {
+                conn.setAutoCommit(false);
+
+                // 1. Update books table
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "MERGE INTO books KEY(id) VALUES (?, ?, ?, ?)")) {
+                    for (Book event : books) {
+                        stmt.setString(1, event.id());
+                        stmt.setString(2, event.title());
+                        stmt.setString(3, event.author());
+                        stmt.setInt(4, event.year());
+                        stmt.executeUpdate();
+                        stmt.addBatch();
+                    }
+                    stmt.executeBatch();
+                }
+
+                // 2. Update cache
+                books.forEach(event -> cache.put(event.id(), event));
+                conn.commit();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error while saving books: ", e);
+        }
     }
 
     public Optional<Book> findById(String id) {
         System.out.println("find by : " + id);
-        Optional<VersionedBook> optional = Optional.ofNullable(cache.get(id));
-        return optional.map(VersionedBook::book);
-    }
-
-    public Optional<VersionedBook> findById2(String id) {
         return Optional.ofNullable(cache.get(id));
     }
 
     public List<Book> findAll() {
         System.out.println("find all");
-        return cache.asMap().values().stream().map(VersionedBook::book).toList();
+        return cache.asMap().values().stream().toList();
     }
 
-    private VersionedBook loadFromDb(String id) {
+    private Book loadFromDb(String id) {
         System.out.println("loadFromDb: " + Thread.currentThread().getName());
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
-                     "SELECT id, title, author, pub_year, version, last_updated FROM books WHERE id = ?")) {
+                     "SELECT id, title, author, pub_year FROM books WHERE id = ?")) {
 
             stmt.setString(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -133,20 +127,12 @@ public class BookRepositoryWithCache {
                             rs.getInt("pub_year")
                     );
                     System.out.println(book);
-                    return new VersionedBook(
-                            book,
-                            rs.getLong("version"),
-                            rs.getTimestamp("last_updated").toInstant()
-                    );
+                    return book;
                 }
             }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to load book from database", e);
         }
         return null;
-    }
-
-    public DataSource getDataSource() {
-        return this.dataSource;
     }
 }

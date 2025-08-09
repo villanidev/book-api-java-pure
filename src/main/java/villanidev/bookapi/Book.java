@@ -1,4 +1,4 @@
-package villanidev.bookapi.mvc;
+package villanidev.bookapi;
 
 import java.io.Serial;
 import java.io.Serializable;

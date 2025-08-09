@@ -1,4 +1,4 @@
-package villanidev.bookapi.mvc;
+package villanidev.bookapi;
 
 import villanidev.httpserver.JHttpRequest;
 import villanidev.httpserver.JHttpResponse;
@@ -8,7 +8,6 @@ import villanidev.httpserver.utils.JsonUtils;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 public class BookController {
    private final BookService service;
@@ -33,9 +32,6 @@ public class BookController {
 
     public void createBook(JHttpRequest request, JHttpResponse response) {
         try {
-            /*Book book = JsonUtils.fromJson(request.getBody(), Book.class);
-            service.save(book);
-            response.status(201).json(book);*/
             String body = request.getBody();
             asyncExecutor.execute(() -> {
                 Book book = JsonUtils.fromJson(body, Book.class);
