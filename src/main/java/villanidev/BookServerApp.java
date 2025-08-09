@@ -2,14 +2,13 @@ package villanidev;
 
 import com.zaxxer.hikari.HikariDataSource;
 import villanidev.bookapi.BookController;
+import villanidev.bookapi.BookRepositoryWithCache;
 import villanidev.bookapi.BookService;
 import villanidev.bookapi.persistenceconfig.DatabaseConfig;
 import villanidev.bookapi.persistenceconfig.SchemaInitializer;
-import villanidev.bookapi.BookRepositoryWithCache;
 import villanidev.httpserver.JServer;
 import villanidev.httpserver.SimpleAsyncExecutor;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -51,7 +50,7 @@ public class BookServerApp {
             long timeElapsed = Duration.between(start, finish).toMillis();
             System.out.println("Server started in " + timeElapsed + " (ms)");
         } catch (Exception e) {
-            throw new RuntimeException("App error: ", e);
+            throw new RuntimeException("App initialization error: ", e);
         }
     }
 }
