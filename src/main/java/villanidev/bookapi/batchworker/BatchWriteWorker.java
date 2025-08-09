@@ -81,23 +81,7 @@ public class BatchWriteWorker implements Runnable {
                 stmt.executeBatch();
             }
 
-            // 2. Insert to event store
-            try (PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO book_events (event_id, book_id, type, data, version) " +
-                            "VALUES (?, ?, ?, ?, ?)")) {
-                for (BookEvent event : batch) {
-                    stmt.setString(1, event.eventId().toString());
-                    stmt.setString(2, event.bookId());
-                    stmt.setString(3, "UPDATE");
-                    stmt.setString(4, JsonUtils.toJson(event.book()));
-                    stmt.setLong(5, event.version());
-                    stmt.addBatch();
-                }
-                int[] inserted = stmt.executeBatch();
-                System.out.println("Inserted: "+ inserted.length+" records");
-            }
-
-            // 3. Update cache
+            // 2. Update cache
             batch.forEach(event -> {
                 VersionedBook versioned = new VersionedBook(
                         event.book(),
