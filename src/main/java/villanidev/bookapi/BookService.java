@@ -10,16 +10,22 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class BookService {
     private final BlockingQueue<Book> writeQueue = new LinkedBlockingQueue<>(10_000);
-    private final ExecutorService workerExecutor = Executors.newSingleThreadExecutor(
+    /*private final ExecutorService workerExecutor = Executors.newSingleThreadExecutor(
             Thread.ofVirtual()
                     .name("workerVthread-", 0)
                     .factory()
-    );
+    );*/
+
     private final BookRepositoryWithCache repository;
 
     public BookService(BookRepositoryWithCache repository) {
         this.repository = repository;
-        this.workerExecutor.submit(new BatchWriteWorker(writeQueue, repository));
+        for (int i = 0; i < 10; i++) {
+            Thread.ofVirtual()
+                    .name("workerVthread-", i)
+                    .start(new BatchWriteWorker(writeQueue, repository));
+        }
+        //this.workerExecutor.submit(new BatchWriteWorker(writeQueue, repository));
     }
 
     public void save(Book book) {

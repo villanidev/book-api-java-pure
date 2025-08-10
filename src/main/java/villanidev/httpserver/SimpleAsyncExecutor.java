@@ -72,10 +72,10 @@ public class SimpleAsyncExecutor {
      * Shutdown the executor
      * @throws InterruptedException
      */
-    public void shutdown() throws InterruptedException {
+    public void shutdown() {
         executor.shutdown();
-        if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+        /*if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
             executor.shutdownNow();
-        }
+        }*/
     }
 }
