@@ -50,6 +50,7 @@ public class BookRepositoryWithCache {
     }
 
     public Book save(Book book) {
+        System.out.println("Saving into db: "+ Thread.currentThread().getName());
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
 
@@ -95,6 +96,7 @@ public class BookRepositoryWithCache {
                 // 2. Update cache
                 books.forEach(event -> cache.put(event.id(), event));
                 conn.commit();
+                System.out.println("Saved : " + books.size() + " records");
             }
         } catch (Exception e) {
             throw new RuntimeException("Error while saving books: ", e);
